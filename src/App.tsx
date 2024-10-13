@@ -22,6 +22,7 @@ function App() {
     { id: 2, title: 'Python', body: 'Python - programming language' },
     { id: 3, title: 'Python', body: 'Python - programming language' },
     { id: 4, title: 'Python', body: 'Python - programming language' },
+    { id: 5, title: 'Python', body: 'Python - programming language' },
   ])
 
   const createPost = (newPost: { id: number; title: string; body: string }) => {
