@@ -1,49 +1,78 @@
-import { ChangeEvent, useState, MouseEvent, useRef } from 'react'
-import { Counter } from './components/Counter'
-import { ClassCounter } from './components/ClassCounter'
+import { useEffect, useState } from 'react'
 import './styles/App.css'
-import { PostItem } from './components/PostItem'
+
 import { PostsList } from './components/PostsList'
-import { MyButton } from './components/UI/button/MyButton'
-import { MyInput } from './components/UI/input/MyInput'
+
 import { PostForm } from './components/PostForm'
 
+import PostService from './API/PostService'
+import { PostFilter } from './components/PostFilter'
+import { MyModal } from './components/UI/MyModal/MyModal'
+import { MyButton } from './components/UI/button/MyButton'
+import { usePosts } from './hooks/usePosts'
+import { Loader } from './components/UI/Loader/Loader'
+import { useFetching } from './hooks/useFetching'
+import { getPageCount, getPagesArray } from './utils/pages'
+import { Pagination } from './components/UI/pagination/Pagination'
+
+export type Post = {
+  id: number
+  title: string
+  body: string
+}
+
+export type SortType = {
+  title: string
+  body: string
+}
+
 function App() {
-  const [posts, setPosts] = useState([
-    { id: 0, title: 'JavaScript', body: 'JavaScript - programming language - 1' },
-    { id: 1, title: 'JavaScript', body: 'JavaScript - programming language - 2' },
-    { id: 2, title: 'JavaScript', body: 'JavaScript - programming language - 3' },
-    { id: 3, title: 'JavaScript', body: 'JavaScript - programming language - 4' },
-    { id: 4, title: 'JavaScript', body: 'JavaScript - programming language - 5' },
-  ])
-  const [posts2, setPosts2] = useState([
-    { id: 0, title: 'Python', body: 'Python - programming language' },
-    { id: 1, title: 'Python', body: 'Python - programming language' },
-    { id: 2, title: 'Python', body: 'Python - programming language' },
-    { id: 3, title: 'Python', body: 'Python - programming language' },
-    { id: 4, title: 'Python', body: 'Python - programming language' },
-    { id: 5, title: 'Python', body: 'Python - programming language' },
-  ])
+  const [posts, setPosts] = useState<Post[]>([])
+
+  const [filter, setFilter] = useState({ sort: '', query: '' })
+  const [totalPages, setTotalPages] = useState(0)
+  const [limit, setLimit] = useState(10)
+  const [page, setPage] = useState(1)
+  const [visible, setVisible] = useState(false)
+  const sortedAndSearchedPosts = usePosts(posts, filter)
+
+  const { fetching, isLoading, error } = useFetching(async (limit, page) => {
+    const response = await PostService.getAll(limit, page)
+    setPosts(response.data)
+    setTotalPages(getPageCount(response.headers['x-total-count'], limit))
+  })
+
+  useEffect(() => {
+    fetching(limit, page)
+  }, [])
 
   const createPost = (newPost: { id: number; title: string; body: string }) => {
     setPosts([...posts, newPost])
+    setVisible(false)
   }
 
   const removePost = (post: { id: number; title: string; body: string }) => {
     setPosts(posts.filter((p) => p.id !== post.id))
   }
 
+  const changePage = (page: number) => {
+    setPage(page)
+    fetching(limit, page)
+  }
+
   return (
     <div className="App">
-      <PostForm create={createPost} />
-
-      {posts.length !== 0 ? (
-        <PostsList remove={removePost} title="Posts list of JS" posts={posts} />
-      ) : (
-        <h1 style={{ textAlign: 'center' }}>Посты не найдены!</h1>
-      )}
-
-      {/* <PostsList remove={removePost} title="Posts list of Py" posts={posts2} /> */}
+      <MyButton style={{ marginTop: '30px' }} onClick={() => setVisible(true)}>
+        Создать пост
+      </MyButton>
+      <MyModal visible={visible} setVisible={setVisible}>
+        <PostForm create={createPost} />
+      </MyModal>
+      <hr style={{ margin: '15px 0' }} />
+      <PostFilter filter={filter} setFilter={setFilter} />
+      <Pagination page={page} totalPages={totalPages} changePage={changePage} />
+      {error && <h1>Ошибка: ${error}</h1>}
+      {isLoading ? <Loader /> : <PostsList remove={removePost} title="Posts list" posts={sortedAndSearchedPosts} />}
     </div>
   )
 }
