@@ -1,6 +1,14 @@
 import { useMemo } from 'react'
-import { Post } from '../App'
-import { SortType } from '../App'
+export type Post = {
+  id: number
+  title: string
+  body: string
+}
+
+export type SortType = {
+  title: string
+  body: string
+}
 
 export const useSortedPosts = (posts: Post[], sort: string) => {
   const sortedPosts = useMemo(() => {
